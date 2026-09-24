@@ -6,23 +6,41 @@ import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+// استيراد وحدات النظام الـ 10 الاحترافية التي أنشأناها
+import { firewallMiddleware } from './security-firewall.js';
+import { cacheMiddleware } from './cache-engine.js';
+import { getCompressionConfig } from './compression-config.js';
+import { cleanAndValidateAIResponse } from './ai-validator.js';
+import { sanitizeRepoName } from './sanitizer.js';
+import { globalErrorHandler } from './error-handler.js';
+import { healthCheckRoute } from './health-check.js';
+import { logAction } from './logger-service.js';
+import { SYSTEM_CONFIG } from './config.js';
+
 dotenv.config();
 
 const app = express();
+
+// 1. تفعيل ضغط البيانات والسرعة العالية
+app.use(getCompressionConfig());
+
 app.use(express.json());
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 1. نظام حماية السيرفر المتقدم (Rate Limiting)
+// 2. تفعيل جدار الحماية الأمني
+app.use(firewallMiddleware);
+
+// 3. نظام الحد من الطلبات (Rate Limiting) بناءً على إعدادات النظام
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 دقيقة
-    max: 50,
+    windowMs: SYSTEM_CONFIG.windowMsTime,
+    max: SYSTEM_CONFIG.maxRequestLimit,
     message: { error: 'لقد تجاوزت الحد المسموح من الطلبات، يرجى المحاولة لاحقاً.' }
 });
 app.use('/generate-and-deploy', limiter);
 
-// التحقق من المفاتيح
+// التحقق من مفاتيح البيئة الأساسية
 if (!process.env.GEMINI_API_KEY || !process.env.GITHUB_TOKEN) {
     console.error('خطأ فادح: مفاتيح البيئة الأساسية غير متوفرة!');
     process.exit(1);
@@ -31,21 +49,23 @@ if (!process.env.GEMINI_API_KEY || !process.env.GITHUB_TOKEN) {
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
-// 2. تفعيل قراءة صفحات الواجهة الثابتة بأمان تام من الجذر
+// 4. مسار فحص صحة النظام (Health Check Route)
+app.get('/health', healthCheckRoute);
+
+// 5. قراءة صفحات الواجهة الثابتة بأمان مع تفعيل الذاكرة المؤقتة لزيادة السرعة
 app.use(express.static(__dirname, {
     index: ['index.html'],
-    // منع المستخدمين من قراءة الملفات الحساسة مثل .env أو package.json لأسباب أمنية
     dotfiles: 'ignore',
     filter: (filePath) => {
-        if (filePath.endsWith('.env') || filePath.endsWith('package.json') || filePath.endsWith('server.js')) {
+        if (filePath.endsWith('.env') || filePath.endsWith('package.json') || filePath.endsWith('server.js') || filePath.endsWith('.js')) {
             return false;
         }
         return true;
     }
 }));
 
-// 3. المحرك الرئيسي لتوليد التطبيقات ورفعها للإنتاج
-app.post('/generate-and-deploy', async (req, res) => {
+// 6. المحرك الرئيسي لتوليد التطبيقات ورفعها للإنتاج (مدعوم بالمدققات والمعالجات)
+app.post('/generate-and-deploy', async (req, res, next) => {
     try {
         const { prompt, repoName } = req.body;
         
@@ -53,9 +73,10 @@ app.post('/generate-and-deploy', async (req, res) => {
             return res.status(400).json({ error: 'الرجاء إدخال وصف التطبيق واسم المستودع المطلوب.' });
         }
 
-        const sanitizedRepoName = repoName.trim().toLowerCase().replace(/\s+/g, '-');
+        // استخدام معالج ومصفي الأسماء
+        const sanitizedRepoName = sanitizeRepoName(repoName);
 
-        console.log(`[AI Engine] جاري توليد التطبيق للطلب: "${prompt}"...`);
+        logAction('generation_start', `بدء توليد التطبيق للمستودع: ${sanitizedRepoName}`);
 
         const aiResponse = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -64,23 +85,17 @@ app.post('/generate-and-deploy', async (req, res) => {
             يجب أن يكون ردك بصيغة كائن JSON خالص فقط بدون أي نص إضافي، بحيث يكون المفتاح هو اسم الملف والقيمة هي الكود البرمجي الكامل.`
         });
 
-        let rawText = aiResponse.text.trim();
-        if (rawText.startsWith('```json')) {
-            rawText = rawText.replace(/^```json/, '').replace(/```$/, '').trim();
-        } else if (rawText.startsWith('```')) {
-            rawText = rawText.replace(/^```/, '').replace(/```$/, '').trim();
-        }
-
-        const filesData = JSON.parse(rawText);
+        // استخدام المدقق المركزي لتنظيف وفحص مخرجات الـ AI
+        const filesData = cleanAndValidateAIResponse(aiResponse.text);
 
         const { data: user } = await octokit.rest.users.getAuthenticated();
         const owner = user.login;
 
-        console.log(`[GitHub API] جاري إنتاج المستودع: ${sanitizedRepoName}...`);
+        logAction('github_create', `إنشاء المستودع على جيت هاب: ${sanitizedRepoName}`);
 
         await octokit.rest.repos.createForAuthenticatedUser({
             name: sanitizedRepoName,
-            description: 'تم تطويره وإنشاؤه تلقائياً عبر منصة أبو حازم العمري الذكية',
+            description: `تم التطوير عبر ${SYSTEM_CONFIG.appName} - إدارة وتطوير أبو حازم العمري`,
             auto_init: true
         });
 
@@ -94,7 +109,7 @@ app.post('/generate-and-deploy', async (req, res) => {
             });
         }
 
-        console.log(`[Success] تمت العملية بنجاح تام وتم النشر على جيت هاب!`);
+        logAction('success', `تم نشر التطبيق بنجاح تام للمستودع: ${sanitizedRepoName}`);
 
         res.status(200).json({ 
             success: true, 
@@ -103,15 +118,14 @@ app.post('/generate-and-deploy', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Error Details]:', error);
-        res.status(500).json({ 
-            error: 'فشلت عملية التوليد أو النشر.', 
-            details: error.message 
-        });
+        next(error); // توجيه الخطأ لمعالج الأخطاء المركزي
     }
 });
 
+// 7. تفعيل معالج الأخطاء المركزي النهائي
+app.use(globalErrorHandler);
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`الخادم الاحترافي يعمل بكفاءة تامة على المنفذ ${PORT}`);
+    console.log(`[${SYSTEM_CONFIG.appName}] يعمل بكفاءة تامة وأمان مطلق على المنفذ ${PORT} - ${SYSTEM_CONFIG.manager}`);
 });
