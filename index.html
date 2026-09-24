@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI App Engine - المنصة الخارقة لتوليد التطبيقات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05050a;
+            --card-bg: rgba(20, 20, 35, 0.7);
+            --accent-glow: #6366f1;
+            --accent-secondary: #ec4899;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(99, 102, 241, 0.2);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(5, 5, 10, 0.8);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #818cf8, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-left: 20px;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover { color: var(--text-main); }
+        .main-container {
+            flex: 1;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+        .hero-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .hero-section h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+        .hero-section p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+        .generator-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+        }
+        .input-group {
+            margin-bottom: 25px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+        .input-group input, .input-group textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(10, 10, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            border-color: var(--accent-glow);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+        }
+        .generate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+        }
+        .generate-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-2px);
+        }
+        #result-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            border-radius: 12px;
+            display: none;
+        }
+        #result-box h3 { color: #34d399; margin-bottom: 10px; }
+        #result-box a { color: #818cf8; text-decoration: none; word-break: break-all; font-weight: bold; }
+        footer {
+            text-align: center;
+            padding: 25px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">⚡ NEXUS AI ENGINE</div>
+        <div class="nav-links">
+            <a href="terms.html">اتفاقية الاستخدام</a>
+            <a href="privacy.html">سياسة الخصوصية</a>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="hero-section">
+            <h1>حول أفكارك إلى تطبيقات حية بضغطة زر</h1>
+            <p>منظومة برمجية ذكية تولد هيكل التطبيقات بالكامل وترفعها فوراً إلى مستودعات GitHub الخاصة بك.</p>
+        </div>
+
+        <div class="generator-card">
+            <div class="input-group">
+                <label>اسم المستودع المطلوب على GitHub</label>
+                <input type="text" id="repoName" placeholder="مثال: my-awesome-app">
+            </div>
+            <div class="input-group">
+                <label>صف تفصيل فكرة التطبيق أو الموقع الذي تريد بناءه</label>
+                <textarea id="prompt" rows="5" placeholder="مثال: اصنع لي صفحة هبوط حديثة لتطبيق ذكاء اصطناعي مع أزرار تفاعلية..."></textarea>
+            </div>
+            <button class="generate-btn" onclick="startGeneration()">إطلاق وإنشاء التطبيق الآن 🚀</button>
+
+            <div id="result-box">
+                <h3 id="status-title">جاري العمل...</h3>
+                <p id="status-text">يرجى الانتظار بينما يقوم محرك الذكاء الاصطناعي ببناء الهيكل ورفع الملفات إلى جيت هاب...</p>
+                <div id="link-container" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        جميع الحقوق محفوظة © 2026 - إدارة وتطوير أبو حازم العمري (Enterprise Edition)
+    </footer>
+
+    <script>
+        async function startGeneration() {
+            const repoName = document.getElementById('repoName').value.trim();
+            const prompt = document.getElementById('prompt').value.trim();
+            const resultBox = document.getElementById('result-box');
+            const statusTitle = document.getElementById('status-title');
+            const statusText = document.getElementById('status-text');
+            const linkContainer = document.getElementById('link-container');
+
+            if (!repoName || !prompt) {
+                alert('الرجاء تعبئة جميع الحقول المطلوبة بدقة!');
+                return;
+            }
+
+            resultBox.style.display = 'block';
+            statusTitle.innerText = '⏳ جاري المعالجة والتوليد...';
+            statusText.innerText = 'يقوم محرك Gemini بصياغة الأكواد ورفعها إلى مستودع جيت هاب...';
+            linkContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/generate-and-deploy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ repoName, prompt })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    statusTitle.innerText = '✅ تم إنجاز ونشر التطبيق بنجاح تام!';
+                    statusText.innerText = data.message;
+                    linkContainer.innerHTML = `رابط المستودع المنتج: <a href="${data.repoUrl}" target="_blank">${data.repoUrl}</a>`;
+                } else {
+                    statusTitle.innerText = '❌ حدث خطأ أثناء المعالجة';
+                    statusText.innerText = data.error + (data.details ? ' - ' + data.details : '');
+                }
+            } catch (err) {
+                statusTitle.innerText = '❌ خطأ في الاتصال بالخادم';
+                statusText.innerText = err.message;
+            }
+        }
+    </script>
+</body>
+</html>
